@@ -30,10 +30,12 @@ struct IDTR {
 
 /**
  * Context frame register structure passed by assembly ISR
+ * Layout must match stack after isr_common_stub:
+ *   pusha (EDI,ESI,EBP,ESP,EBX,EDX,ECX,EAX) + int_number + error_code + CPU (EIP,CS,EFLAGS)
  */
 struct InterruptFrame {
-    uint32_t cpu_eax, cpu_ecx, cpu_edx, cpu_ebx;
-    uint32_t cpu_esp, cpu_ebp, cpu_esi, cpu_edi;
+    uint32_t edi, esi, ebp, esp;
+    uint32_t ebx, edx, ecx, eax;
     uint32_t int_number, error_code;
     uint32_t eip, cs, eflags;
 } __attribute__((packed));
