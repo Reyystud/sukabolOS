@@ -52,4 +52,25 @@ int memcmp(const void *s1, const void *s2, size_t n);
 */
 void *memmove(void *dest, const void *src, size_t n);
 
+/**
+ * C standard strlen, check man strlen or
+ * https://man7.org/linux/man-pages/man3/strlen.3.html for more details
+ *
+ * @param s Pointer to null-terminated string
+ *
+ * @return Length of s, excluding the null terminator
+*/
+size_t strlen(const char *s);
+
+/**
+ * C standard strcmp, check man strcmp or
+ * https://man7.org/linux/man-pages/man3/strcmp.3.html for more details
+ *
+ * @param s1 Pointer to first null-terminated string
+ * @param s2 Pointer to second null-terminated string
+ *
+ * @return Integer as error code, zero for equality, non-zero for inequality
+*/
+int strcmp(const char *s1, const char *s2);
+
 #endif

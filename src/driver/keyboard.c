@@ -17,6 +17,12 @@ const char keyboard_scancode_1_to_ascii[256] = {
 static uint8_t cursor_row = 1;
 static uint8_t cursor_col = 0;
 
+void keyboard_echo_set_cursor(uint8_t row, uint8_t col) {
+    cursor_row = row;
+    cursor_col = col;
+    framebuffer_set_cursor(cursor_row, cursor_col);
+}
+
 extern void main_interrupt_handler_0x21(void);
 
 void keyboard_state_activate(void) {
