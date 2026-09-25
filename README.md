@@ -13,9 +13,7 @@ Pada file README, minimal kalian harus memiliki hal berikut:
 - Fitur yang Dibuat
 - Maskot Kelompok Kalian
 
-Ini isi lengkap file `README.md` dalam format Markdown utuh, tinggal kamu *copy-paste* langsung ke file `README.md` kamu:
 
-```markdown
 # IF2230 Operating Systems 2026 - Bare-Metal Kernel
 
 Repositori ini berisi implementasi *bare-metal Operating System* x86 32-bit (IA-32) berbasis **Multiboot1** spesifikasi yang dikembangkan untuk memenuhi tugas mata kuliah **IF2230 Sistem Operasi**.
@@ -129,7 +127,3 @@ gdb bin/kernel
 (gdb) print global_descriptor_table
 
 ```
-
-
-
----
