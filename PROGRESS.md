@@ -11,7 +11,7 @@ Status diverifikasi dari isi `src/`, `Makefile`, dan `CHANGES_CH2.md` (per 2026-
 | Ch. 0 | Toolchain, Kernel, GDT | ✅ Selesai |
 | Ch. 1 | Framebuffer, Interrupt, Driver | ✅ Selesai |
 | Ch. 2 | File System EXT2 — IF2130 Edition | ✅ Selesai |
-| Ch. 3 | Paging, User Mode, Shell | ⬜ Belum dimulai |
+| Ch. 3 | Paging, User Mode, Shell | 🟨 3.1 Paging kode selesai (belum diuji boot) |
 | Ch. 4 | Process, Scheduler, Multitasking | ⬜ Belum dimulai |
 
 Progres implementasi: **Ch. 0–2 dari Ch. 0–4** (3/5 chapter).
@@ -93,18 +93,19 @@ Progres implementasi: **Ch. 0–2 dari Ch. 0–4** (3/5 chapter).
 
 ## Ch. 3 — Paging, User Mode, Shell
 
-> Belum ada di `src/`. Kit tersedia di `.kit/ch3/` (`paging.c/.h`, `external-inserter.c`).
+> 3.1 Paging sudah ada di `src/`. Sisanya belum. Kit di `.kit/ch3/`.
 
 ### 3.1. Paging
-- [ ] 3.1.0. Paging: Overview
-- [ ] 3.1.1. Data Structure: Page Table
-- [ ] 3.1.2. Higher Half Kernel (`linker.ld`, `kernel-entrypoint.s`)
-- [ ] 3.1.3. Activate Paging
-- [ ] 3.1.4. Memory Manager
-  - [ ] 3.1.4.1. Frame Allocator
-  - [ ] 3.1.4.2. Frame Deallocator
-  - [ ] 3.1.4.3. Free Memory Check
-- [ ] Tips / Extra / Frequent Issue: Paging
+> Kode selesai & berhasil di-compile/link; **belum diuji boot di QEMU** (cek `[CHECK]` di serial log).
+- [x] 3.1.0. Paging: Overview (bacaan)
+- [x] 3.1.1. Data Structure: Page Table (`src/header/memory/paging.h`)
+- [x] 3.1.2. Higher Half Kernel (`src/linker.ld`, `0xC0100000`)
+- [x] 3.1.3. Activate Paging (`src/kernel-entrypoint.s`, + recursive PDE 1023, `FRAMEBUFFER` → `0xC00B8000`)
+- [x] 3.1.4. Memory Manager (`src/memory/paging.c`)
+  - [x] 3.1.4.1. Frame Allocator
+  - [x] 3.1.4.2. Frame Deallocator
+  - [x] 3.1.4.3. Free Memory Check
+- [x] Tips / Extra / Frequent Issue: Paging
 
 ### 3.2. Swap Space (opsional/bonus)
 - [ ] 3.2.1. Page Fault

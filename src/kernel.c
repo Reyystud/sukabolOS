@@ -9,6 +9,7 @@
 #include "header/filesystem/ext2.h"
 #include "header/stdlib/string.h"
 #include "header/kernel-entrypoint.h"
+#include "header/memory/paging.h"
 
 // CP437 box-drawing glyphs (double-line). These must stay as raw byte values,
 // not literal Unicode characters - VGA text mode expects single-byte CP437
@@ -86,6 +87,43 @@ void kernel_setup(void) {
 
     serial_init();
     serial_write("[CHECK] BOOT_ENTRY\n");
+
+    // Ch.3 Step 1: Paging test sequence
+    {
+        uint32_t cr0, esp_now;
+        __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
+        __asm__ volatile("mov %%esp, %0" : "=r"(esp_now));
+        bool high_half = ((uint32_t) &kernel_setup >= KERNEL_VIRTUAL_BASE) && esp_now >= KERNEL_VIRTUAL_BASE;
+        serial_write((cr0 & 0x80000000u) && high_half ? "[CHECK] PAGING_ON\n" : "[CHECK] PAGING_FAIL\n");
+
+        struct PageDirectory *pd = &_paging_kernel_page_directory;
+        uint32_t free_before = page_manager_state.free_page_frame_count;
+
+        serial_write(paging_allocate_check(PAGE_FRAME_SIZE) && !paging_allocate_check(SYSTEM_MEMORY_MB << 20)
+            ? "[CHECK] PAGING_CHECK_OK\n" : "[CHECK] PAGING_CHECK_FAIL\n");
+
+        bool ok = paging_allocate_user_page_frame(pd, (void *) 0x0);
+        if (ok) {
+            volatile uint32_t *user_ptr = (volatile uint32_t *) 0x0;
+            *user_ptr = 0xDEADBEEF;
+            ok = (*user_ptr == 0xDEADBEEF);
+        }
+        serial_write(ok ? "[CHECK] ALLOC_OK\n" : "[CHECK] ALLOC_FAIL\n");
+        // PT frame + data frame consumed
+        serial_write(free_before - page_manager_state.free_page_frame_count == 2
+            ? "[CHECK] ALLOC_COUNT_OK\n" : "[CHECK] ALLOC_COUNT_FAIL\n");
+
+        serial_write(!paging_allocate_user_page_frame(pd, (void *) 0x0)
+            ? "[CHECK] DOUBLE_ALLOC_REJECT_OK\n" : "[CHECK] DOUBLE_ALLOC_REJECT_FAIL\n");
+        serial_write(!paging_allocate_user_page_frame(pd, (void *) KERNEL_VIRTUAL_BASE)
+            ? "[CHECK] KERNEL_ALLOC_REJECT_OK\n" : "[CHECK] KERNEL_ALLOC_REJECT_FAIL\n");
+
+        bool freed = paging_free_user_page_frame(pd, (void *) 0x0);
+        serial_write(freed && page_manager_state.free_page_frame_count == free_before - 1
+            ? "[CHECK] FREE_OK\n" : "[CHECK] FREE_FAIL\n");
+        serial_write(!paging_free_user_page_frame(pd, (void *) 0x0)
+            ? "[CHECK] DOUBLE_FREE_REJECT_OK\n" : "[CHECK] DOUBLE_FREE_REJECT_FAIL\n");
+    }
 
     // Ch.2 Step 5: EXT2 filesystem initializer
     {

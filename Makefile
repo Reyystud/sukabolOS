@@ -50,8 +50,9 @@ kernel:
 	@$(CC) $(CFLAGS) src/stdlib/string.c -o bin/string.o
 	@$(CC) $(CFLAGS) src/driver/disk.c -o bin/disk.o
 	@$(CC) $(CFLAGS) src/filesystem/ext2.c -o bin/ext2.o
+	@$(CC) $(CFLAGS) src/memory/paging.c -o bin/paging.o
 	@echo Linking object files and generate elf32...
-	@$(LIN) $(LFLAGS) bin/kernel-entrypoint.o bin/interrupt.o bin/kernel.o bin/gdt.o bin/portio.o bin/idt.o bin/framebuffer.o bin/keyboard.o bin/serial.o bin/string.o bin/disk.o bin/ext2.o -o $(OUTPUT_FOLDER)/kernel
+	@$(LIN) $(LFLAGS) bin/kernel-entrypoint.o bin/interrupt.o bin/kernel.o bin/gdt.o bin/portio.o bin/idt.o bin/framebuffer.o bin/keyboard.o bin/serial.o bin/string.o bin/disk.o bin/ext2.o bin/paging.o -o $(OUTPUT_FOLDER)/kernel
 	@rm -f bin/*.o
 
 iso: kernel
