@@ -1,34 +1,32 @@
 ![Credit: 朧月](mascot.jpg)
 
-# Template Dasar IF2130 Sistem Operasi - 2026/2027
-Template dasar untuk Tugas Besar IF2130 - Sistem Operasi 2026/2027
+# sukabolOS — IF2130 Sistem Operasi 2026/2027
 
-## README Specification
+Implementasi *bare-metal Operating System* x86 32-bit (IA-32) berbasis **Multiboot1** (boot via GRUB legacy) untuk Tugas Besar IF2130 Sistem Operasi.
 
-Pada file README, minimal kalian harus memiliki hal berikut:
+## Daftar Isi
 
-- Nama Kelompok
-- Daftar Isi
-- Cara Run
-- Fitur yang Dibuat
-- Maskot Kelompok Kalian
-
-
-# IF2230 Operating Systems 2026 - Bare-Metal Kernel
-
-Repositori ini berisi implementasi *bare-metal Operating System* x86 32-bit (IA-32) berbasis **Multiboot1** spesifikasi yang dikembangkan untuk memenuhi tugas mata kuliah **IF2230 Sistem Operasi**.
+- [Fitur yang Dibuat](#fitur-yang-dibuat)
+- [Struktur Repositori](#struktur-repositori)
+- [Prasyarat](#prasyarat)
+- [Cara Run](#cara-run)
+- [Debugging dengan GDB](#debugging-dengan-gdb)
+- [Troubleshooting](#troubleshooting)
+- [Maskot](#maskot)
 
 ---
 
-## Fitur & Modul Terimplementasi (Chapter 0)
+## Fitur yang Dibuat
 
-* **Kernel Entrypoint & Multiboot Header**: Konfigurasi header Multiboot1 (`0x1BADB002`) pada assembly (`src/kernel-entrypoint.s`) untuk booting via GRUB[cite: 1].
-* **Global Descriptor Table (GDT)**: Implementasi Flat Memory Model (Ring 0) dengan 3 entri utama[cite: 1]:
-  * `Null Descriptor` (`0x00`)[cite: 1]
-  * `Kernel Code Segment` (`0x08`) — Base: `0x0`, Limit: `4GB`, Executable/Read, Ring 0[cite: 1]
-  * `Kernel Data Segment` (`0x10`) — Base: `0x0`, Limit: `4GB`, Read/Write, Ring 0[cite: 1]
-* **Assembly Helper (`load_gdt`)**: Pemuatan struktur GDTR ke CPU menggunakan instruksi assembly `lgdt` dan melakukan *far reload* segmen data[cite: 1].
-* **ISO Bootable Generation**: Pembentukan *image* bootable ISO (`OS2026.iso`) menggunakan `genisoimage` dan `grub1`[cite: 1].
+Detail lengkap ada di [PROGRESS.md](PROGRESS.md).
+
+| Chapter | Topik | Status |
+|---|---|---|
+| Ch. 0 | Toolchain, Kernel, GDT | ✅ Selesai |
+| Ch. 1 | Framebuffer, Interrupt (IDT/PIC), Keyboard, Serial | ✅ Selesai |
+| Ch. 2 | File System EXT2 (disk driver ATA + EXT2) | ✅ Selesai |
+| Ch. 3 | Paging (higher-half kernel), User Mode, Shell | 🟨 3.1 Paging kode selesai (belum diuji boot) |
+| Ch. 4 | Process, Scheduler, Multitasking | ⬜ Belum dimulai |
 
 ---
 
@@ -36,94 +34,152 @@ Repositori ini berisi implementasi *bare-metal Operating System* x86 32-bit (IA-
 
 ```text
 .
-├── bin/                    # Output kompilasi binary (.o, .iso, kernel)
-├── iso/                    # Struktur file/folder untuk pembuatan ISO GRUB
+├── bin/                     # Output build (kernel, OS2025.iso, storage.bin)
+├── other/grub1              # Bootloader GRUB legacy untuk ISO
 ├── src/
-│   ├── header/             # Header files (.h)
-│   │   └── gdt.h          # Struktur data & definisi segmen GDT
-│   ├── gdt.c               # Inisialisasi & pemuatan Global Descriptor Table
-│   ├── kernel.c            # Entrypoint C kernel & pengujian sederhana
-│   └── kernel-entrypoint.s # Entrypoint assembly bare-metal
-├── Makefile                # Skrip kompilasi & pembentukan ISO
+│   ├── cpu/                 # GDT, IDT, port I/O, interrupt stub (.s)
+│   ├── driver/              # Framebuffer, keyboard, serial, disk (ATA)
+│   ├── filesystem/          # EXT2
+│   ├── memory/              # Paging / memory manager
+│   ├── stdlib/              # string.c
+│   ├── header/              # Seluruh header (.h)
+│   ├── kernel.c             # Entrypoint C kernel
+│   ├── kernel-entrypoint.s  # Entrypoint assembly + Multiboot header
+│   ├── linker.ld            # Linker script
+│   └── menu.lst             # Konfigurasi menu GRUB
+├── Makefile
+├── PROGRESS.md
 └── README.md
-
 ```
 
 ---
 
-## Prasyarat Sistem
+## Prasyarat
 
-Proyek ini dibangun dan diuji pada sistem **Arch Linux** dengan dependensi berikut:
+Dibangun dan diuji di Linux (x86_64). Pastikan tool berikut terpasang dan ada di `PATH`:
 
-* **GCC** (x86 32-bit target / `-m32`)
+| Tool | Fungsi | Contoh paket |
+|---|---|---|
+| `gcc` (dengan dukungan `-m32`) | Kompilasi kernel C | `gcc`, `gcc-multilib` |
+| `nasm` | Assembler | `nasm` |
+| `ld` (binutils) | Linker (`-melf_i386`) | `binutils` |
+| `genisoimage` | Membuat ISO bootable | `cdrtools` / `genisoimage` |
+| `qemu-system-i386`, `qemu-img` | Emulator & pembuat disk image | `qemu` |
+| `gdb` *(opsional)* | Debugging | `gdb` |
 
+Cek cepat:
 
-* **NASM** / **GNU Assembler**
-
-* **QEMU** (`qemu-system-i386`)
-
-
-* **GDB** (`x86_64-pc-linux-gnu` atau `i686-elf-gdb`)
-
-
-* **cdrtools** (`genisoimage`)
-
-
+```bash
+gcc -m32 --version && nasm -v && ld -v && genisoimage --version && qemu-system-i386 --version
+```
 
 ---
 
-## Panduan Kompilasi & Menjalankan OS
+## Cara Run
 
-### 1. Build Kernel & Generate ISO
+Jalankan semua perintah dari root repositori.
 
-Untuk mengompilasi seluruh source code dan membentuk file ISO bootable:
+### 1. Buat disk image (sekali saja)
 
-```bash
-make iso
-
-```
-
-*Output ISO akan dihasilkan di `bin/OS2026.iso`.*
-
-### 2. Menjalankan OS di QEMU
-
-Untuk menjalankan OS secara langsung di emulator QEMU:
+Kernel membutuhkan disk 4 MB sebagai penyimpanan EXT2. Jika `bin/storage.bin` belum ada:
 
 ```bash
-qemu-system-i386 -cdrom bin/OS2025.iso
-
+mkdir -p bin
+make disk
 ```
 
-### 3. Debugging dengan GDB & QEMU
+Ini menjalankan `qemu-img create -f raw bin/storage.bin 4M`.
 
-Untuk melakukan *remote debugging* GDT dan register CPU:
+### 2. Build kernel & ISO
 
-1. Jalankan QEMU dalam mode terbekukan (`-S`) dengan port GDB (`-s` / port `1234`):
 ```bash
-qemu-system-i386 -s -S -cdrom bin/OS2025.iso
-
+make build      # sama dengan `make all` / `make iso`
 ```
 
+Hasil:
+- `bin/kernel` — ELF32 kernel
+- `bin/OS2025.iso` — ISO bootable (GRUB legacy + kernel)
 
-2. Buka terminal baru dan hubungkan GDB ke kernel:
+### 3. Jalankan di QEMU
+
+Ada dua cara:
+
+**a. Lewat Makefile**
+
 ```bash
-gdb bin/kernel
-
+make run
 ```
 
+> ⚠️ Target ini memakai flag `-s -S`: QEMU **berhenti di awal dan menunggu GDB** tersambung di port 1234. Jendela QEMU akan tampak kosong/beku sampai kamu menyambungkan GDB lalu `continue` (lihat [Debugging dengan GDB](#debugging-dengan-gdb)).
 
-3. Sambungkan ke remote target QEMU:
-```text
-(gdb) target remote localhost:1234
-(gdb) break kernel_setup
-(gdb) continue
+**b. Langsung (tanpa debugger, langsung boot)**
 
+```bash
+qemu-system-i386 \
+  -cdrom bin/OS2025.iso \
+  -drive file=bin/storage.bin,format=raw,if=ide,index=0,media=disk
 ```
 
+### 4. Headless / cek log serial (opsional)
 
-4. Periksa isi struktur GDT:
-```text
-(gdb) print _gdt_gdtr
-(gdb) print global_descriptor_table
-
+```bash
+make debug-run
+cat bin/out.log
 ```
+
+Menjalankan QEMU tanpa tampilan selama 8 detik dan menyimpan output serial ke `bin/out.log`.
+
+### 5. Bersihkan hasil build
+
+```bash
+make clean
+```
+
+### Ringkasan satu baris
+
+```bash
+mkdir -p bin && make disk && make build && qemu-system-i386 -cdrom bin/OS2025.iso -drive file=bin/storage.bin,format=raw,if=ide,index=0,media=disk
+```
+
+---
+
+## Debugging dengan GDB
+
+1. Terminal 1 — jalankan QEMU dalam mode beku:
+   ```bash
+   make run
+   ```
+2. Terminal 2 — sambungkan GDB:
+   ```bash
+   gdb bin/kernel
+   ```
+   ```text
+   (gdb) target remote localhost:1234
+   (gdb) break kernel_setup
+   (gdb) continue
+   ```
+3. Periksa struktur, misalnya GDT:
+   ```text
+   (gdb) print _gdt_gdtr
+   (gdb) print global_descriptor_table
+   ```
+
+---
+
+## Troubleshooting
+
+| Masalah | Solusi |
+|---|---|
+| QEMU blank setelah `make run` | Normal, QEMU menunggu GDB. Sambungkan GDB + `continue`, atau pakai perintah QEMU langsung (cara 3b). |
+| `make: ... storage.bin: No such file` | Jalankan `make disk` dulu (pastikan folder `bin/` ada). |
+| `gcc: error: unrecognized -m32` / header 32-bit hilang | Pasang `gcc-multilib` (atau toolchain 32-bit setara). |
+| `genisoimage: command not found` | Pasang `cdrtools` / `genisoimage`. |
+| Kernel reboot terus / triple fault | Cek `bin/out.log` lewat `make debug-run`. |
+
+---
+
+## Maskot
+
+![Maskot kelompok](mascot.jpg)
+
+*Credit: 朧月*
